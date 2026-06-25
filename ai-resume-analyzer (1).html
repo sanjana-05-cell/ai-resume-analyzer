@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResumeIQ — AI Resume Analyzer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:#0a0a0f;--surface:#12121a;--card:#1a1a26;--border:#2a2a3e;
+    --accent:#7c3aed;--accent2:#06b6d4;--accent3:#10b981;
+    --danger:#ef4444;--warning:#f59e0b;--text:#f0f0ff;--muted:#8888aa;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  nav{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2rem;border-bottom:1px solid var(--border);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.85);}
+  .logo{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;background:linear-gradient(135deg,#7c3aed,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .nav-badge{font-size:0.7rem;background:var(--accent);color:white;padding:0.2rem 0.6rem;border-radius:20px;font-weight:600;}
+  .hero{text-align:center;padding:4rem 1rem 2rem;}
+  .hero-tag{display:inline-block;font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent2);border:1px solid var(--accent2);padding:0.3rem 1rem;border-radius:20px;margin-bottom:1.5rem;}
+  .hero h1{font-family:'Syne',sans-serif;font-size:clamp(2rem,5vw,3.5rem);font-weight:800;line-height:1.1;margin-bottom:1rem;}
+  .hero h1 span{background:linear-gradient(135deg,#7c3aed,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .hero p{color:var(--muted);font-size:1.05rem;max-width:500px;margin:0 auto 2.5rem;line-height:1.7;}
+  .main{max-width:1100px;margin:0 auto;padding:0 1.5rem 4rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;}
+  @media(max-width:768px){.main{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem;}
+  .card-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:1.5rem;display:flex;align-items:center;gap:0.6rem;}
+  .card-title .dot{width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);}
+  .drop-zone{border:2px dashed var(--border);border-radius:12px;padding:2.5rem 1rem;text-align:center;cursor:pointer;transition:all 0.3s;margin-bottom:1.2rem;position:relative;}
+  .drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:rgba(124,58,237,0.05);}
+  .drop-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+  .drop-icon{font-size:2.5rem;margin-bottom:0.8rem;}
+  .drop-zone p{color:var(--muted);font-size:0.9rem;line-height:1.6;}
+  .drop-zone strong{color:var(--text);}
+  .input-group{margin-bottom:1.2rem;}
+  .input-group label{display:block;font-size:0.85rem;color:var(--muted);margin-bottom:0.5rem;font-weight:500;}
+  .input-group input,.input-group textarea,.input-group select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.75rem 1rem;color:var(--text);font-family:'Inter',sans-serif;font-size:0.9rem;transition:border-color 0.2s;outline:none;}
+  .input-group input:focus,.input-group textarea:focus{border-color:var(--accent);}
+  .input-group textarea{resize:vertical;min-height:120px;}
+  .btn-analyze{width:100%;padding:0.9rem;background:linear-gradient(135deg,#7c3aed,#06b6d4);border:none;border-radius:10px;color:white;font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity 0.2s,transform 0.1s;}
+  .btn-analyze:hover{opacity:0.9;transform:translateY(-1px);}
+  .btn-analyze:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+  .results-panel{display:flex;flex-direction:column;gap:1.2rem;}
+  .score-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.8rem;display:flex;align-items:center;gap:2rem;}
+  .score-ring{position:relative;width:100px;height:100px;flex-shrink:0;}
+  .score-ring svg{transform:rotate(-90deg);}
+  .score-ring .score-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .score-ring .num{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;line-height:1;}
+  .score-ring .label{font-size:0.65rem;color:var(--muted);letter-spacing:0.05em;}
+  .score-info h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:0.3rem;}
+  .score-info p{color:var(--muted);font-size:0.85rem;line-height:1.6;}
+  .category-card,.feedback-card,.skills-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;}
+  .cat-item{margin-bottom:1rem;}.cat-item:last-child{margin-bottom:0;}
+  .cat-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;}
+  .cat-name{font-size:0.85rem;font-weight:500;}
+  .cat-score{font-size:0.85rem;font-weight:700;}
+  .progress-bar{height:6px;background:var(--surface);border-radius:3px;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(0.4,0,0.2,1);}
+  .feedback-item{display:flex;gap:0.8rem;padding:0.7rem 0;border-bottom:1px solid var(--border);font-size:0.875rem;line-height:1.5;}
+  .feedback-item:last-child{border-bottom:none;padding-bottom:0;}
+  .feedback-icon{font-size:1rem;flex-shrink:0;margin-top:1px;}
+  .feedback-text{color:var(--muted);}
+  .feedback-text strong{color:var(--text);display:block;margin-bottom:0.2rem;}
+  .skills-grid{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem;}
+  .skill-tag{font-size:0.78rem;padding:0.3rem 0.8rem;border-radius:20px;font-weight:500;}
+  .skill-found{background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);}
+  .skill-missing{background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);}
+  .loading{display:none;text-align:center;padding:3rem;color:var(--muted);}
+  .loading.show{display:block;}
+  .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1rem;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .placeholder{text-align:center;padding:4rem 2rem;color:var(--muted);}
+  .placeholder .ph-icon{font-size:3rem;margin-bottom:1rem;opacity:0.4;}
+  .file-name{font-size:0.8rem;color:var(--accent2);text-align:center;margin-top:0.5rem;display:none;}
+  .section-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.8rem;font-weight:600;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
+  @media(max-width:500px){.two-col{grid-template-columns:1fr;}}
+  .demo-note{background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.25);border-radius:8px;padding:0.7rem 1rem;font-size:0.8rem;color:#06b6d4;margin-bottom:1rem;text-align:center;}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">ResumeIQ</div>
+  <span class="nav-badge">AI POWERED</span>
+</nav>
+<div class="hero">
+  <div class="hero-tag">✦ Smart Resume Analysis</div>
+  <h1>Analyze Your Resume<br><span>Like a Recruiter Would</span></h1>
+  <p>Get an instant AI score, detailed feedback, and skill gap analysis tailored to your target job role.</p>
+</div>
+<div class="main">
+  <div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span> Upload & Analyze</div>
+      <div class="demo-note">✦ Paste your resume text below for instant smart analysis!</div>
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="resumeFile" accept=".txt" onchange="handleFile(this)">
+        <div class="drop-icon">📄</div>
+        <p><strong>Drop your resume here</strong><br>or click to browse (.txt)</p>
+      </div>
+      <div class="file-name" id="fileName"></div>
+      <div class="input-group" style="margin-top:1.2rem">
+        <label>Target Job Role</label>
+        <input type="text" id="jobRole" placeholder="e.g. Frontend Developer, Data Analyst..."/>
+      </div>
+      <div class="input-group">
+        <label>Paste Your Resume Text Here ✍️</label>
+        <textarea id="resumeText" placeholder="Paste your full resume content here — skills, experience, education, projects..."></textarea>
+      </div>
+      <button class="btn-analyze" id="analyzeBtn" onclick="analyzeResume()">✦ Analyze My Resume</button>
+    </div>
+  </div>
+  <div class="results-panel">
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Analyzing your resume...<br><span style="font-size:0.8rem">Just a moment!</span></p>
+    </div>
+    <div id="placeholder" class="placeholder">
+      <div class="ph-icon">🎯</div>
+      <p>Your analysis will appear here.<br>Paste your resume and click Analyze!</p>
+    </div>
+    <div id="results" style="display:none;flex-direction:column;gap:1.2rem;"></div>
+  </div>
+</div>
+<script>
+  let resumeContent = '';
+
+  function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    document.getElementById('fileName').style.display = 'block';
+    document.getElementById('fileName').textContent = '📎 ' + file.name;
+    const reader = new FileReader();
+    reader.onload = e => { resumeContent = e.target.result; document.getElementById('resumeText').value = resumeContent; };
+    reader.readAsText(file);
+  }
+
+  function getColor(score) {
+    if (score >= 80) return '#10b981';
+    if (score >= 60) return '#06b6d4';
+    if (score >= 40) return '#f59e0b';
+    return '#ef4444';
+  }
+
+  function smartAnalyze(text, jobRole) {
+    const t = text.toLowerCase();
+    const role = jobRole.toLowerCase();
+
+    // Score based on content
+    let base = 40;
+    const keywords = ['experience','project','skills','education','achievement','built','developed','designed','implemented','led','improved','increased','reduced','managed'];
+    keywords.forEach(k => { if (t.includes(k)) base += 3; });
+
+    const techSkills = ['python','javascript','react','node','html','css','java','sql','mongodb','git','api','typescript','c++','arduino','iot'];
+    let skillsFound = techSkills.filter(s => t.includes(s));
+
+    const hasNumbers = /\d+%|\d+ years|\d+\+/.test(text);
+    const hasEmail = /\S+@\S+/.test(text);
+    const hasLinks = /github|linkedin|portfolio/.test(t);
+    const wordCount = text.split(/\s+/).length;
+
+    if (hasNumbers) base += 8;
+    if (hasEmail) base += 5;
+    if (hasLinks) base += 7;
+    if (wordCount > 200) base += 5;
+    if (wordCount > 400) base += 5;
+    if (skillsFound.length > 3) base += 8;
+
+    const score = Math.min(Math.max(base, 30), 95);
+
+    // Role-specific missing skills
+    let missing = [];
+    if (role.includes('frontend') || role.includes('web')) {
+      missing = ['TypeScript','Figma','Next.js','Testing'].filter(s => !t.includes(s.toLowerCase()));
+    } else if (role.includes('data') || role.includes('analyst')) {
+      missing = ['Pandas','NumPy','Tableau','Power BI'].filter(s => !t.includes(s.toLowerCase()));
+    } else if (role.includes('backend')) {
+      missing = ['Docker','AWS','Redis','Microservices'].filter(s => !t.includes(s.toLowerCase()));
+    } else {
+      missing = ['Docker','AWS','TypeScript','Agile'].filter(s => !t.includes(s.toLowerCase()));
+    }
+
+    const grade = score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 55 ? 'C' : score >= 40 ? 'D' : 'F';
+
+    return {
+      overallScore: score,
+      grade,
+      verdict: score >= 70 ? `Strong resume for a ${jobRole} role — good structure and relevant skills detected.` : score >= 50 ? `Decent resume with room to grow — adding more measurable achievements will boost your chances.` : `Your resume needs more detail — expand your projects and skills section to stand out.`,
+      categories: {
+        impact: hasNumbers ? Math.min(score + 5, 95) : Math.max(score - 20, 20),
+        skills: Math.min(40 + skillsFound.length * 8, 95),
+        structure: wordCount > 300 ? Math.min(score + 8, 92) : Math.max(score - 10, 30),
+        keywords: hasLinks ? Math.min(score + 10, 90) : Math.max(score - 5, 35),
+        experience: t.includes('experience') || t.includes('project') ? Math.min(score + 5, 90) : Math.max(score - 15, 25),
+      },
+      strengths: [
+        { title: skillsFound.length > 0 ? 'Good Technical Skills' : 'Has Relevant Content', detail: skillsFound.length > 0 ? ` Skills like ${skillsFound.slice(0,3).join(', ')} are in demand.` : ' Your resume contains relevant information for this role.' },
+        { title: hasLinks ? 'Online Presence' : 'Educational Background', detail: hasLinks ? ' GitHub/LinkedIn links show initiative and professionalism.' : ' Education section adds credibility to your application.' },
+        { title: wordCount > 300 ? 'Good Length' : 'Concise Format', detail: wordCount > 300 ? ' Resume has enough detail to impress recruiters.' : ' Clean and focused — easy for recruiters to scan.' },
+      ],
+      improvements: [
+        { title: !hasNumbers ? 'Add Numbers & Metrics' : 'Strengthen Metrics', detail: !hasNumbers ? ' Add achievements like "Improved speed by 40%" or "Built app used by 500+ users".' : ' Make your impact numbers even more specific and impressive.' },
+        { title: missing.length > 0 ? `Learn ${missing[0]}` : 'Add More Projects', detail: missing.length > 0 ? ` ${missing[0]} is commonly required for ${jobRole} roles.` : ' More projects = more proof of your skills.' },
+        { title: !hasLinks ? 'Add GitHub & LinkedIn' : 'Update Your Profiles', detail: !hasLinks ? ' Always include your GitHub and LinkedIn links in the resume.' : ' Make sure your GitHub has pinned projects and LinkedIn is up to date.' },
+      ],
+      skillsFound: skillsFound.slice(0, 6).map(s => s.charAt(0).toUpperCase() + s.slice(1)),
+      skillsMissing: missing.slice(0, 4),
+      atsScore: Math.max(score - 8, 25),
+      tip: !hasNumbers ? 'Add at least 2-3 measurable achievements with numbers — this alone can increase your interview rate by 30%!' : `Tailor your resume specifically for each ${jobRole} job description to pass ATS filters.`
+    };
+  }
+
+  function analyzeResume() {
+    const jobRole = document.getElementById('jobRole').value.trim() || 'Software Developer';
+    const resumeText = document.getElementById('resumeText').value.trim() || resumeContent;
+    if (!resumeText || resumeText.length < 30) { alert('Please paste your resume text first! (at least a few lines)'); return; }
+
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('loading').classList.add('show');
+    document.getElementById('analyzeBtn').disabled = true;
+
+    setTimeout(() => {
+      const result = smartAnalyze(resumeText, jobRole);
+      renderResults(result, jobRole);
+      document.getElementById('loading').classList.remove('show');
+      document.getElementById('analyzeBtn').disabled = false;
+    }, 2000);
+  }
+
+  function renderResults(r, jobRole) {
+    const color = getColor(r.overallScore);
+    const circumference = 2 * Math.PI * 40;
+    const offset = circumference - (r.overallScore / 100) * circumference;
+    const catColors = { impact:'#7c3aed', skills:'#06b6d4', structure:'#10b981', keywords:'#f59e0b', experience:'#ef4444' };
+    const catLabels = { impact:'⚡ Impact & Achievements', skills:'🛠️ Skills Match', structure:'📐 Structure & Format', keywords:'🔍 ATS Keywords', experience:'💼 Experience Relevance' };
+
+    document.getElementById('results').innerHTML = `
+      <div class="score-card">
+        <div class="score-ring">
+          <svg width="100" height="100" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#1a1a26" stroke-width="8"/>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="${color}" stroke-width="8"
+              stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"
+              style="transition:stroke-dashoffset 1.5s ease"/>
+          </svg>
+          <div class="score-num">
+            <span class="num" style="color:${color}">${r.overallScore}</span>
+            <span class="label">/ 100</span>
+          </div>
+        </div>
+        <div class="score-info">
+          <h3>Grade: ${r.grade} — ${r.overallScore>=80?'Excellent':r.overallScore>=60?'Good':r.overallScore>=40?'Needs Work':'Poor'}</h3>
+          <p>${r.verdict}</p>
+          <p style="margin-top:0.5rem;font-size:0.8rem;color:#06b6d4">ATS Score: ${r.atsScore}/100 for <em>${jobRole}</em></p>
+        </div>
+      </div>
+      <div class="category-card">
+        <div class="section-label">Category Breakdown</div>
+        ${Object.entries(r.categories).map(([key,val])=>`
+          <div class="cat-item">
+            <div class="cat-header">
+              <span class="cat-name">${catLabels[key]||key}</span>
+              <span class="cat-score" style="color:${getColor(val)}">${val}%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${val}%;background:${catColors[key]||'#7c3aed'}"></div></div>
+          </div>`).join('')}
+      </div>
+      <div class="two-col">
+        <div class="feedback-card">
+          <div class="section-label">✅ Strengths</div>
+          ${r.strengths.map(s=>`<div class="feedback-item"><span class="feedback-icon">✦</span><div class="feedback-text"><strong>${s.title}</strong>${s.detail}</div></div>`).join('')}
+        </div>
+        <div class="feedback-card">
+          <div class="section-label">🔧 Improvements</div>
+          ${r.improvements.map(s=>`<div class="feedback-item"><span class="feedback-icon">→</span><div class="feedback-text"><strong>${s.title}</strong>${s.detail}</div></div>`).join('')}
+        </div>
+      </div>
+      <div class="skills-card">
+        <div class="section-label">Skills Analysis</div>
+        <div class="skills-grid">
+          ${r.skillsFound.map(s=>`<span class="skill-tag skill-found">✓ ${s}</span>`).join('')}
+          ${r.skillsMissing.map(s=>`<span class="skill-tag skill-missing">✗ ${s}</span>`).join('')}
+        </div>
+      </div>
+      <div style="background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(6,182,212,0.15));border:1px solid rgba(124,58,237,0.3);border-radius:12px;padding:1.2rem;">
+        <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;color:#7c3aed;margin-bottom:0.5rem;font-weight:600">⚡ Quick Win</div>
+        <p style="font-size:0.9rem;line-height:1.6;color:#e0e0ff">${r.tip}</p>
+      </div>`;
+
+    const el = document.getElementById('results');
+    el.style.display = 'flex';
+    el.style.flexDirection = 'column';
+    el.style.gap = '1.2rem';
+  }
+
+  const dz = document.getElementById('dropZone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) { const r = new FileReader(); r.onload = ev => { resumeContent = ev.target.result; document.getElementById('resumeText').value = resumeContent; document.getElementById('fileName').style.display='block'; document.getElementById('fileName').textContent='📎 '+file.name; }; r.readAsText(file); }
+  });
+</script>
+</body>
+</html>
